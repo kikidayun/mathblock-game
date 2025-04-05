@@ -1,0 +1,174 @@
+<html lang="ko"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수식 블록 파괴 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            margin: auto;
+            border: 2px solid #333;
+            background-color: white;
+            overflow: hidden;
+        }
+        .block {
+            position: absolute;
+            top: 0;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: lightcoral;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #input-box {
+            margin-top: 20px;
+            font-size: 20px;
+            padding: 5px;
+            text-align: center;
+        }
+        #score {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>수식 블록 파괴 게임</h1>
+    <div id="score">점수: 0 | 생명: 3</div>
+    <div id="game-container"></div>
+    <input type="text" id="input-box" placeholder="정답 입력 후 엔터" autofocus="">
+
+    <script>
+        const gameContainer = document.getElementById("game-container");
+        const inputBox = document.getElementById("input-box");
+        const scoreBoard = document.getElementById("score");
+
+        let score = 0;
+        let lives = 3;
+        let speed = 2;
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function toSubscript(num) {
+            const subscriptMap = {
+                "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", 
+                "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉"
+            };
+            return num.toString().split("").map(digit => subscriptMap[digit] || digit).join("");
+        }
+
+        function generateProblem() {
+            let type = getRandomInt(1, 4);
+            let a, b, question, answer;
+
+            if (score < 50) type = 1; // 초반에는 사칙연산만
+            if (score >= 100) type = getRandomInt(1, 6); // 고득점이면 로그, 지수 포함
+
+            switch (type) {
+                case 1: // 덧셈, 뺄셈, 곱셈, 나눗셈
+                    a = getRandomInt(1, 20);
+                    b = getRandomInt(1, 20);
+                    let op = ["×", "÷"][getRandomInt(0, 1)];
+                    if (op === "×") answer = a * b;
+                    if (op === "÷") {
+                        a = a * b; // 나누어떨어지게 설정
+                        answer = a / b;
+                    }
+                    question = `${a} ${op} ${b}`;
+                    break;
+
+                case 2: // 제곱, 세제곱
+                    a = getRandomInt(2, 9);
+                    let power = getRandomInt(2, 3);
+                    answer = Math.pow(a, power);
+                    question = `${a}^${power}`;
+                    break;
+
+                case 3: // 제곱근
+                    answer = getRandomInt(2, 6);
+                    a = answer * answer;
+                    question = `√${a}`;
+                    break;
+
+                case 4: // 로그 (밑을 아래첨자로 표기)
+                    let baseOptions = [2, 3, 5, 10];
+                    let base = baseOptions[getRandomInt(0, baseOptions.length - 1)];
+                    answer = getRandomInt(1, 3);
+                    a = Math.pow(base, answer);
+                    question = `log${toSubscript(base)}${a}`;
+                    break;
+
+                case 5: // 지수 계산
+                    a = getRandomInt(2, 4);
+                    let exp = getRandomInt(2, 3);
+                    answer = Math.pow(a, exp);
+                    question = `${a}^${exp}`;
+                    break;
+            }
+
+            return { question, answer: answer.toString() };
+        }
+
+        function createBlock() {
+            let problem = generateProblem();
+            let block = document.createElement("div");
+            block.classList.add("block");
+            block.innerHTML = problem.question; // HTML 태그 적용 가능
+            block.dataset.answer = problem.answer;
+            block.style.left = Math.random() * 350 + "px";
+            gameContainer.appendChild(block);
+
+            let fallInterval = setInterval(() => {
+                let top = parseInt(window.getComputedStyle(block).top);
+                if (top > 550) {
+                    clearInterval(fallInterval);
+                    gameContainer.removeChild(block);
+                    lives--;
+                    updateScore();
+                    if (lives === 0) {
+                        alert("게임 오버! 최종 점수: " + score);
+                        location.reload();
+                    }
+                } else {
+                    block.style.top = top + speed + "px";
+                }
+            }, 50);
+        }
+
+        function updateScore() {
+            scoreBoard.innerHTML = `점수: ${score} | 생명: ${lives}`;
+        }
+
+        inputBox.addEventListener("keyup", (event) => {
+            if (event.key === "Enter") {
+                let answer = inputBox.value.trim();
+                let blocks = document.querySelectorAll(".block");
+
+                blocks.forEach(block => {
+                    if (block.dataset.answer === answer) {
+                        gameContainer.removeChild(block);
+                        score += 10;
+                        speed += 0.2;
+                        updateScore();
+                    }
+                });
+
+                inputBox.value = "";
+            }
+        });
+
+        setInterval(createBlock, 2000);
+    </script>
+
+
+
+</body></html>
